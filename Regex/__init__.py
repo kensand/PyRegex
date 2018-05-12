@@ -1,8 +1,8 @@
-import Nfa
-
-
-
 import string
+
+import FA
+
+
 
 class Regex:
     # the atomic unit class of a regex, used to represent each expression
@@ -34,19 +34,17 @@ class Regex:
         # its content and adding an NFA operation to the resulting nfa
         # Character NFAs act as the base case for the recursion
 
-
-
         def tonfa(self):
             def makeCountNFA(count, nfa):
-                s = Nfa.gensym()
-                ret = Nfa.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s])
+                s = FA.gensym()
+                ret = FA.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s])
                 for i in range(count):
                     ret = ret.concatenate(nfa)
                 return ret
 
             if self.type == self.CHAR_SECTION:
-                return Nfa.Nfa(states=[0, 1], alphabet=[self.content], start=0, ends=[1],
-                               transitions={0: {self.content: [1]}})
+                return FA.Nfa(states=[0, 1], alphabet=[self.content], start=0, ends=[1],
+                              transitions={0: {self.content: [1]}})
 
             elif self.type == self.SET_SECTION:
                 if len(self.content) == 0:
@@ -82,9 +80,9 @@ class Regex:
                 if self.content == None:
                     raise ValueError("Plus Section has no preceding regex")
                 else:
-                    s = Nfa.gensym()
+                    s = FA.gensym()
                     return self.content.tonfa().union(
-                        Nfa.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s]))
+                        FA.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s]))
 
             elif self.type == self.REPEAT_SECTION:
 
@@ -99,18 +97,18 @@ class Regex:
                 if self.end is not None and self.end <= 0:
                     raise ValueError("Repeat Section has an invalid repeat start number")
 
-                if self.end == None: # we only have a start
-                    if self.andmore: # we want more than that number of repetitions
+                if self.end == None:  # we only have a start
+                    if self.andmore:  # we want more than that number of repetitions
                         cnfa = self.content.tonfa()
                         repnfa = makeCountNFA(self.start, cnfa)
                         return repnfa.concatenate(cnfa.star())
-                    else: # we only want that number of repetitions
+                    else:  # we only want that number of repetitions
                         cnfa = self.content.tonfa()
                         return makeCountNFA(self.start, cnfa)
 
                 else:
-                    s = Nfa.gensym()
-                    ret = Nfa.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s])
+                    s = FA.gensym()
+                    ret = FA.Nfa(states=[s], alphabet=[], transitions={}, start=s, ends=[s])
                     cnfa = self.content.tonfa()
                     for i in range(self.start, self.end + 1):
                         repeatnfa = makeCountNFA(i, cnfa)
@@ -123,8 +121,8 @@ class Regex:
     # function to create a new section depending on the the character(s) in the regex
     def nextsection(self, r):
 
-        n = None    # placeholder for next Section
-        rest = r    # place holder fot the remaining part of the regex
+        n = None  # placeholder for next Section
+        rest = r  # place holder fot the remaining part of the regex
 
         if not len(r) == 0:
             # escaped the next character
@@ -222,7 +220,7 @@ class Regex:
                 if i >= len(r):
                     raise ValueError("Regex repeat clause missing closing '}'. Did you forget to escape a '{' ?")
                 inside = r[1:i]
-                n, rest = self.Section(sectype=self.Section.REPEAT_SECTION, content=None), r[i+1:]
+                n, rest = self.Section(sectype=self.Section.REPEAT_SECTION, content=None), r[i + 1:]
                 n.start = None
                 n.end = None
 
@@ -263,7 +261,7 @@ class Regex:
                     n.end = None
                     n.andmore = False
 
-            #Set of options
+            # Set of options
             elif r[0] == '[':
                 i = 1
                 count = 0
@@ -284,7 +282,8 @@ class Regex:
                 if i == len(r):
                     raise ValueError("Mismatched Square Brackets. Use a backslash ('\\') to escape Square Brackets.")
                 else:
-                    n, rest = self.Section(sectype=self.Section.SET_SECTION, content=self.getsections(r[1:i])), r[i+1:]
+                    n, rest = self.Section(sectype=self.Section.SET_SECTION, content=self.getsections(r[1:i])), r[
+                                                                                                                i + 1:]
 
             elif r[0] == '.':
                 n, rest = self.Section(self.Section.SET_SECTION,
